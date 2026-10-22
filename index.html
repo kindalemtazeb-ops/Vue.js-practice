@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue.js Hello World</title>
+    <!-- Vue.js CDN ከእንግዲህ ከቀጥታ ድር ጣቢያ እንወስደዋለን -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+
+    <!-- 1. Vue የሚሰራበትን ቦታ (DOM Element) እንሰጣለን -->
+    <div id="app">
+        <h1>{{ message }}</h1>
+    </div>
+
+    <!-- 2. የ Vue ሎጂክ የምንጽፍበት ስክሪፕት -->
+    <script>
+        const { createApp, ref } = Vue
+
+        createApp({
+            setup() {
+                // 3. ሪአክቲቭ የሆነ ተለዋዋጭ (Variable) እንፈጥራለን
+                const message = ref('ሰላም ዎርልድ! (Hello World from Vue.js)')
+
+                return {
+                    message
+                }
+            }
+        }).mount('#app')
+    </script>
+
+</body>
+</html>
