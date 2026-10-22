@@ -1,30 +1,61 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue.js Hello World</title>
-    <!-- Vue.js CDN ከእንግዲህ ከቀጥታ ድር ጣቢያ እንወስደዋለን -->
+    <title>Vue.js Interactivity</title>
+    <!-- Vue.js CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <!-- 1. Vue የሚሰራበትን ቦታ (DOM Element) እንሰጣለን -->
-    <div id="app">
-        <h1>{{ message }}</h1>
+    <div id="app" class="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full">
+        <h1 class="text-2xl font-bold mb-4 text-blue-600">Vue.js Reactivity</h1>
+
+        <!-- 1. Two-Way Data Binding (v-model) -->
+        <input 
+            v-model="name" 
+            type="text" 
+            placeholder="Enter your name..." 
+            class="w-full p-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+
+        <!-- 2. Conditional Rendering (v-if / v-else) -->
+        <p v-if="name" class="text-lg font-semibold text-gray-700">
+            Welcome, <span class="text-blue-500">{{ name }}</span>! 👋
+        </p>
+        <p v-else class="text-gray-400 italic">
+            Please type your name in the box above...
+        </p>
+
+        <!-- 3. Event Handling (@click) -->
+        <button 
+            @click="clearInput" 
+            class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+        >
+            Clear
+        </button>
     </div>
 
-    <!-- 2. የ Vue ሎጂክ የምንጽፍበት ስክሪፕት -->
     <script>
         const { createApp, ref } = Vue
 
         createApp({
             setup() {
-                // 3. ሪአክቲቭ የሆነ ተለዋዋጭ (Variable) እንፈጥራለን
-                const message = ref('ሰላም ዎርልድ! (Hello World from Vue.js)')
+                // Reactive State Variable
+                const name = ref('')
 
+                // Method to clear the input field
+                const clearInput = () => {
+                    name.value = ''
+                }
+
+                // Return properties to make them available in the template
                 return {
-                    message
+                    name,
+                    clearInput
                 }
             }
         }).mount('#app')
