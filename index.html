@@ -3,59 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vue.js Interactivity</title>
+    <title>Vue.js Task Manager with LocalStorage</title>
     <!-- Vue.js CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-    <div id="app" class="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full">
-        <h1 class="text-2xl font-bold mb-4 text-blue-600">Vue.js Reactivity</h1>
+    <div id="app" class="bg-white p-6 rounded-2xl shadow-xl max-w-md w-full border border-slate-200">
+        <h1 class="text-2xl font-bold mb-1 text-slate-800 text-center">Task Manager</h1>
+        <p class="text-sm text-slate-500 text-center mb-6">Saved automatically with LocalStorage</p>
 
-        <!-- 1. Two-Way Data Binding (v-model) -->
-        <input 
-            v-model="name" 
-            type="text" 
-            placeholder="Enter your name..." 
-            class="w-full p-2 border rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+        <!-- 1. Input Box & Add Button -->
+        <div class="flex gap-2 mb-4">
+            <input 
+                v-model="newTask" 
+                @keyup.enter="addTask"
+                type="text" 
+                placeholder="Add a new task..." 
+                class="flex-1 p-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
+            />
+            <button 
+                @click="addTask" 
+                class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition active:scale-95"
+            >
+                Add
+            </button>
+        </div>
 
-        <!-- 2. Conditional Rendering (v-if / v-else) -->
-        <p v-if="name" class="text-lg font-semibold text-gray-700">
-            Welcome, <span class="text-blue-500">{{ name }}</span>! 👋
+        <!-- 2. Task Counter Statistics -->
+        <div class="flex justify-between items-center text-xs font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg mb-4">
+            <span>Total: {{ tasks.length }}</span>
+            <span class="text-amber-600">Pending: {{ pendingCount }}</span>
+            <span class="text-emerald-600">Completed: {{ completedCount }}</span>
+        </div>
+
+        <!-- 3. Filter Tabs -->
+        <div class="flex border-b border-slate-200 mb-4 text-sm font-medium text-slate-600">
+            <button 
+                @click="filter = 'all'" 
+                :class="{'border-b-2 border-blue-600 text-blue-600 font-bold': filter === 'all'}"
+                class="flex-1 py-2 text-center"
+            >
+                All
+            </button>
+            <button 
+                @click="filter = 'pending'" 
+                :class="{'border-b-2 border-blue-600 text-blue-600 font-bold': filter === 'pending'}"
+                class="flex-1 py-2 text-center"
+            >
+                Pending
+            </button>
+            <button 
+                @click="filter = 'completed'" 
+                :class="{'border-b-2 border-blue-600 text-blue-600 font-bold': filter === 'completed'}"
+                class="flex-1 py-2 text-center"
+            >
+                Completed
+            </button>
+        </div>
+
+        <!-- 4. Task List -->
+        <ul v-if="filteredTasks.length > 0" class="space-y-2">
+            <li 
+                v-for="task in filteredTasks" 
+                :key="task.id" 
+                class="p-3 border rounded-xl flex items-center justify-between transition"
+                :class="task.completed ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-300 shadow-sm'"
+            >
+                <div class="flex items-center gap-3">
+                    <input 
+                        type="checkbox" 
+                        v-model="task.completed" 
+                        class="w-5 h-5 accent-blue-600 cursor-pointer rounded"
+                    />
+                    <span 
+                        class="text-slate-800 font-medium cursor-pointer"
+                        :class="{'line-through text-slate-400': task.completed}"
+                        @click="task.completed = !task.completed"
+                    >
+                        {{ task.text }}
+                    </span>
+                </div>
+
+                <button 
+                    @click="removeTask(task.id)" 
+                    class="text-slate-400 hover:text-red-500 font-bold px-2 py-1 transition"
+                    title="Delete task"
+                >
+                    ✕
+                </button>
+            </li>
+        </ul>
+
+        <!-- Empty State -->
+        <p v-else class="text-slate-400 text-center italic py-6 text-sm">
+            No tasks found in this view!
         </p>
-        <p v-else class="text-gray-400 italic">
-            Please type your name in the box above...
-        </p>
 
-        <!-- 3. Event Handling (@click) -->
+        <!-- Clear Completed Button -->
         <button 
-            @click="clearInput" 
-            class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+            v-if="completedCount > 0"
+            @click="clearCompleted" 
+            class="mt-4 w-full py-2 bg-red-50 text-red-600 text-sm font-semibold rounded-xl hover:bg-red-100 transition"
         >
-            Clear
+            Clear Completed Tasks
         </button>
     </div>
 
     <script>
-        const { createApp, ref } = Vue
+        const { createApp, ref, computed, watch } = Vue
 
         createApp({
             setup() {
-                // Reactive State Variable
-                const name = ref('')
+                const newTask = ref('')
+                const filter = ref('all')
 
-                // Method to clear the input field
-                const clearInput = () => {
-                    name.value = ''
+                // 1. Fetch initial data from LocalStorage if available, or default array
+                const savedTasks = JSON.parse(localStorage.getItem('vue_tasks') || '[]')
+                const tasks = ref(savedTasks.length > 0 ? savedTasks : [
+                    { id: 1, text: 'Learn Vue.js Basics', completed: true },
+                    { id: 2, text: 'Build a Task Manager App', completed: false }
+                ])
+
+                // 2. watch(): Watch for any changes in the tasks array and sync to LocalStorage
+                watch(tasks, (newTasks) => {
+                    localStorage.setItem('vue_tasks', JSON.stringify(newTasks))
+                }, { deep: true })
+
+                // Methods
+                const addTask = () => {
+                    if (newTask.value.trim() !== '') {
+                        tasks.value.push({
+                            id: Date.now(),
+                            text: newTask.value.trim(),
+                            completed: false
+                        })
+                        newTask.value = ''
+                    }
                 }
 
-                // Return properties to make them available in the template
+                const removeTask = (id) => {
+                    tasks.value = tasks.value.filter(task => task.id !== id)
+                }
+
+                const clearCompleted = () => {
+                    tasks.value = tasks.value.filter(task => !task.completed)
+                }
+
+                // Computed Properties
+                const pendingCount = computed(() => tasks.value.filter(t => !t.completed).length)
+                const completedCount = computed(() => tasks.value.filter(t => t.completed).length)
+
+                const filteredTasks = computed(() => {
+                    if (filter.value === 'pending') return tasks.value.filter(t => !t.completed)
+                    if (filter.value === 'completed') return tasks.value.filter(t => t.completed)
+                    return tasks.value
+                })
+
                 return {
-                    name,
-                    clearInput
+                    newTask,
+                    filter,
+                    tasks,
+                    addTask,
+                    removeTask,
+                    clearCompleted,
+                    pendingCount,
+                    completedCount,
+                    filteredTasks
                 }
             }
         }).mount('#app')
